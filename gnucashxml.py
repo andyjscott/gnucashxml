@@ -81,7 +81,10 @@ class Book(object):
             outp.append('')
 
         for trn in sorted(self.transactions):
-            outp.append('{:%Y/%m/%d} * {}'.format(trn.date, trn.description))
+            notes = ""
+            if 'notes' in trn.slots and trn.slots["notes"] is not None:
+                notes = "; " + trn.slots["notes"]
+            outp.append('{:%Y/%m/%d} * {} {}'.format(trn.date, trn.description or "", notes))
             for spl in trn.splits:
                 outp.append('\t{:50} {:12.2f} {} {}'.format(spl.account.fullname(),
                             spl.value,
