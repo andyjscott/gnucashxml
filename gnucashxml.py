@@ -86,9 +86,18 @@ class Book(object):
                 notes = "; " + trn.slots["notes"]
             outp.append('{:%Y/%m/%d} * {} {}'.format(trn.date, trn.description or "", notes))
             for spl in trn.splits:
-                outp.append('\t{:50} {:12.2f} {} {}'.format(spl.account.fullname(),
-                            spl.value,
-                            spl.account.commodity,
+                commodity = str(spl.account.commodity)
+                if any(not c.isalpha() for c in commodity):
+                    commodity = '"{}"'.format(commodity)
+                price = ""
+                if spl.account.commodity != trn.currency:
+                    price = ' @@ {} {}'.format(abs(spl.value),
+                                               trn.currency)
+                outp.append('\t{:50}  {:12.{}f} {}{} {}'.format(spl.account.fullname(),
+                            spl.quantity,
+                            len(str(spl.account.commodity.fraction)) - 1,
+                            commodity,
+                            price,
                             '; '+spl.memo if spl.memo else ''))
             outp.append('')
 
@@ -101,15 +110,16 @@ class Commodity(object):
 
     Consists of a name (or id) and a space (namespace).
     """
-    def __init__(self, name, space=None):
+    def __init__(self, name, space=None, fraction=None):
         self.name = name
         self.space = space
+        self.fraction = fraction or 100
 
     def __str__(self):
         return self.name
 
     def __repr__(self):
-        return "<Commodity {}:{}>".format(self.space, self.name)
+        return "<Commodity {}:{} 1/{}>".format(self.space, self.name, self.fraction)
 
 
 class Account(object):
@@ -322,6 +332,7 @@ def _book_from_tree(tree):
     # Implemented:
     # - cmdty:id
     # - cmdty:space
+    # - cmdty:fraction => optional, e.g. "1"
     #
     # Not implemented:
     # - cmdty:get_quotes => unknown, empty, optional
@@ -329,11 +340,11 @@ def _book_from_tree(tree):
     # - cmdty:source => text, optional, e.g. "currency"
     # - cmdty:name => optional, e.g. "template"
     # - cmdty:xcode => optional, e.g. "template"
-    # - cmdty:fraction => optional, e.g. "1"
     def _commodity_from_tree(tree):
         name = tree.find('{http://www.gnucash.org/XML/cmdty}id').text
         space = tree.find('{http://www.gnucash.org/XML/cmdty}space').text
-        return Commodity(name=name, space=space)
+        fraction = tree.find('{http://www.gnucash.org/XML/cmdty}fraction')
+        return Commodity(name=name, space=space, fraction=int(fraction.text) if fraction is not None else None)
 
 
     def _commodity_find(space, name):
@@ -346,7 +357,8 @@ def _book_from_tree(tree):
 
     for child in tree.findall('{http://www.gnucash.org/XML/gnc}commodity'):
         comm = _commodity_from_tree(child)
-        commodities.append(_commodity_find(comm.space, comm.name))
+        commoditydict[(comm.space, comm.name)] =  comm
+        commodities.append(comm)
         #COMPACT:
         #name = child.find('{http://www.gnucash.org/XML/cmdty}id').text
         #space = child.find('{http://www.gnucash.org/XML/cmdty}space').text
