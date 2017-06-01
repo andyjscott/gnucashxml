@@ -84,7 +84,8 @@ class Book(object):
             notes = ""
             if 'notes' in trn.slots and trn.slots["notes"] is not None:
                 notes = "; " + trn.slots["notes"]
-            outp.append('{:%Y/%m/%d} * {} {}'.format(trn.date, trn.description or "", notes))
+            reconciled = all(spl.reconciled_state == 'y' for spl in trn.splits)
+            outp.append('{:%Y/%m/%d} {} {} {}'.format(trn.date, "*" if reconciled else "", trn.description or "", notes))
             for spl in trn.splits:
                 commodity = str(spl.account.commodity)
                 if any(not c.isalpha() for c in commodity):
@@ -93,12 +94,14 @@ class Book(object):
                 if spl.account.commodity != trn.currency:
                     price = ' @@ {} {}'.format(abs(spl.value),
                                                trn.currency)
-                outp.append('\t{:50}  {:12.{}f} {}{} {}'.format(spl.account.fullname(),
-                            spl.quantity,
-                            len(str(spl.account.commodity.fraction)) - 1,
-                            commodity,
-                            price,
-                            '; '+spl.memo if spl.memo else ''))
+                outp.append('\t{} {:50}  {:12.{}f} {}{} {}'.format(
+                    "*" if not reconciled and spl.reconciled_state == 'y' else "",
+                    spl.account.fullname(),
+                    spl.quantity,
+                    len(str(spl.account.commodity.fraction)) - 1,
+                    commodity,
+                    price,
+                    '; '+spl.memo if spl.memo else ''))
             outp.append('')
 
         return '\n'.join(outp)
