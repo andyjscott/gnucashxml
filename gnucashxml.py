@@ -108,6 +108,17 @@ class Book(object):
 
         return '\n'.join(outp)
 
+    def ledger_price_db(self):
+        outp = []
+
+        for price in sorted(self.prices):
+            outp.append('P {:%Y/%m/%d %H:%M:%S} {} {} {}'.format(
+                price.date,
+                price.commodity.name,
+                price.value,
+                price.currency.name))
+        return '\n'.join(outp)
+
 
 class Commodity(object):
     """
