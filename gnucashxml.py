@@ -95,7 +95,8 @@ class Book(object):
                     price = ' @ {:12.8f} {}'.format(abs(spl.value/spl.quantity),
                                                     trn.currency)
                 outp.append('\t{} {:50}  {:12.{}f} {}{} {}'.format(
-                    "*" if not reconciled and spl.reconciled_state == 'y' else "",
+                    ("*" if not reconciled and spl.reconciled_state == 'y' else
+                     "!" if not reconciled and spl.reconciled_state == 'c' else ""),
                     spl.account.fullname(),
                     spl.quantity,
                     len(str(spl.account.commodity.fraction)) - 1,
