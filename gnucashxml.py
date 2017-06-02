@@ -111,10 +111,14 @@ class Book(object):
     def ledger_price_db(self):
         outp = []
 
+        previous_date = None
         for price in sorted(self.prices):
+            if previous_date is not None and previous_date != price.date:
+                outp.append('')
+            previous_date = price.date
             outp.append('P {:%Y/%m/%d %H:%M:%S} {} {} {}'.format(
                 price.date,
-                price.commodity.name,
+                price.commodity.name if ' ' not in price.commodity.name else '"{}"'.format(price.commodity.name),
                 price.value,
                 price.currency.name))
         return '\n'.join(outp)
