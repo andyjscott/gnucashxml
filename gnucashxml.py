@@ -123,6 +123,63 @@ class Book(object):
                 price.currency.name))
         return '\n'.join(outp)
 
+    def beancount(self):
+        outp = []
+        import re
+        outp.append('option "title" "Beancount Ledger"')
+        outp.append('option "operating_currency" "GBP"')
+
+        for comm in self.commodities:
+            comm.name = comm.name .replace("9", "N") .replace("8", "E") .replace("7", "S") .replace("6", "S") .replace("5", "F") .replace("4", "F") .replace("3", "T") .replace("2", "T").replace("1", "O").replace("0", "Z").replace(".", "").replace(" ", "").upper()
+            outp.append('1970-01-01 commodity {}'.format(comm.name))
+
+        for price in sorted(self.prices):
+            outp.append('P {:%Y-%m-%d} price {} {} {}'.format(
+                price.date,
+                price.commodity.name,
+                price.value,
+                price.currency.name))
+
+        for account in self.accounts:
+            if account.name is not None:
+                print(account.name)
+                account.name = account.name.replace("£", "P").replace("-", " ").replace("%", "Percent").replace("&", "And").replace(".", " ").replace("'", "").title() .replace(".", "").replace(" ", "")
+
+        for account in self.accounts:
+            if ":" not in account.fullname():
+                continue
+            outp.append('1970-01-01 open {} {}'.format(
+                account.fullname(),
+                account.commodity.name))
+
+        for trn in sorted(self.transactions):
+            reconciled = all(spl.reconciled_state == 'y' for spl in trn.splits)
+            if 'notes' in trn.slots and trn.slots["notes"] is not None:
+                outp.append('; {}'.format(trn.slots["notes"]))
+            outp.append('{:%Y-%m-%d}{}{}'.format(
+                trn.date,
+                " *" if reconciled else " txn",
+                ' "{}"'.format(trn.description.replace('"', "'")) if trn.description is not None else ""))
+            for spl in trn.splits:
+                commodity = str(spl.account.commodity)
+                if any(not c.isalpha() for c in commodity):
+                    commodity = '"{}"'.format(commodity)
+                price = ""
+                if spl.account.commodity != trn.currency:
+                    price = ' @ {:12.8f} {}'.format(abs(spl.value/spl.quantity),
+                                                    trn.currency)
+                outp.append('\t{}{:50}  {:12.{}f} {}{}{}'.format(
+                    ("* " if not reconciled and spl.reconciled_state == 'y' else
+                     "! " if not reconciled and spl.reconciled_state == 'c' else ""),
+                    spl.account.fullname(),
+                    spl.quantity,
+                    len(str(spl.account.commodity.fraction)) - 1,
+                    commodity,
+                    price,
+                    ' ; '+spl.memo if spl.memo else ''))
+            outp.append('')
+
+        return '\n'.join(outp)
 
 class Commodity(object):
     """
