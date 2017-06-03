@@ -172,12 +172,11 @@ class Book(object):
 
         for trn in sorted(self.transactions):
             reconciled = all(spl.reconciled_state == 'y' for spl in trn.splits)
-            if 'notes' in trn.slots and trn.slots["notes"] is not None:
-                outp.append('; {}'.format(trn.slots["notes"]))
-            outp.append('{:%Y-%m-%d}{}{}'.format(
+            outp.append('{:%Y-%m-%d}{}{}{}'.format(
                 trn.date,
                 " *" if reconciled else " txn",
-                ' "{}"'.format(trn.description.replace('"', "'")) if trn.description is not None else ""))
+                ' "{}"'.format(trn.description.replace('"', "'")) if trn.description is not None else "",
+                ' "{}"'.format(trn.slots["notes"].replace('"', "'")) if 'notes' in trn.slots and trn.slots["notes"] is not None else ""))
             for spl in trn.splits:
                 commodity = str(spl.account.commodity)
                 if any(not c.isalpha() for c in commodity):
