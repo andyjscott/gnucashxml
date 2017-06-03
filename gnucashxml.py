@@ -155,13 +155,12 @@ class Book(object):
         for account in self.accounts:
             if account.name is not None:
                 account.name = account.name.replace("£", "P") \
-                                           .replace("-", " ") \
                                            .replace("%", "Percent") \
                                            .replace("&", "And") \
                                            .replace(".", " ") \
                                            .replace("'", "") \
-                                           .title() \
-                                           .replace(" ", "")
+                                           .replace(" ", "-") \
+                                           .title()
 
         for account in self.accounts:
             if ":" not in account.fullname():
