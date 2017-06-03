@@ -146,7 +146,7 @@ class Book(object):
             outp.append('1970-01-01 commodity {}'.format(comm.name))
 
         for price in sorted(self.prices):
-            outp.append('P {:%Y-%m-%d} price {} {} {}'.format(
+            outp.append('{:%Y-%m-%d} price {} {} {}'.format(
                 price.date,
                 price.commodity.name,
                 price.value,
