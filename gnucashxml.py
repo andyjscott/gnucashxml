@@ -127,10 +127,22 @@ class Book(object):
         outp = []
         import re
         outp.append('option "title" "Beancount Ledger"')
-        outp.append('option "operating_currency" "GBP"')
+        for comm in self.commodities:
+            comm.name = comm.name.replace(".", "") \
+                                 .replace(" ", "_") \
+                                 .upper()
+            if comm.name[0].isdigit():
+                comm.name = "P_" + comm.name # commodities must start with a capital letter
+
+        from collections import defaultdict
+        kvmap= defaultdict(int)
+        for account in self.accounts:
+            kvmap[account.commodity.name] += 1
+        most_used_currency = max(kvmap, key=lambda k: kvmap[k])
+
+        outp.append('option "operating_currency" "{}"'.format(most_used_currency))
 
         for comm in self.commodities:
-            comm.name = comm.name .replace("9", "N") .replace("8", "E") .replace("7", "S") .replace("6", "S") .replace("5", "F") .replace("4", "F") .replace("3", "T") .replace("2", "T").replace("1", "O").replace("0", "Z").replace(".", "").replace(" ", "").upper()
             outp.append('1970-01-01 commodity {}'.format(comm.name))
 
         for price in sorted(self.prices):
@@ -142,7 +154,6 @@ class Book(object):
 
         for account in self.accounts:
             if account.name is not None:
-                print(account.name)
                 account.name = account.name.replace("£", "P").replace("-", " ").replace("%", "Percent").replace("&", "And").replace(".", " ").replace("'", "").title() .replace(".", "").replace(" ", "")
 
         for account in self.accounts:
@@ -163,7 +174,7 @@ class Book(object):
             for spl in trn.splits:
                 commodity = str(spl.account.commodity)
                 if any(not c.isalpha() for c in commodity):
-                    commodity = '"{}"'.format(commodity)
+                    commodity = '{}'.format(commodity)
                 price = ""
                 if spl.account.commodity != trn.currency:
                     price = ' @ {:12.8f} {}'.format(abs(spl.value/spl.quantity),
